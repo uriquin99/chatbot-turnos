@@ -1,0 +1,813 @@
+{
+  "name": "bot turnos como franco quiere ",
+  "flow": [
+    {
+      "id": 2,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": 0,
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0
+        },
+        "restore": {
+          "parameters": {
+            "hook": {
+              "data": {
+                "editable": "true"
+              },
+              "label": "api de api"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hook",
+            "type": "hook:gateway-webhook",
+            "label": "Webhook",
+            "required": true
+          },
+          {
+            "name": "maxResults",
+            "type": "number",
+            "label": "Maximum number of results"
+          }
+        ]
+      }
+    },
+    {
+      "id": 24,
+      "module": "gemini-ai:simpleTextPrompt",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "model": "gemini-2.5-flash",
+        "textPrompt": "Eres un asistente de agendamiento de citas. Analiza el mensaje del usuario: {{2.pregunta}}\nRespondé únicamente JSON crudo con: {\"intencion\":\"buscar|confirmar|agendar\",\"nombre\":null,\"apellido\":null,\"telefono\":null,\"fecha_hora_inicio\":null}. buscar: saludo o disponibilidad. confirmar: elige horario sin los tres datos completos. agendar: solo si incluye nombre, apellido y teléfono completos. La fecha usa YYYY-MM-DDTHH:mm:ss o null."
+      },
+      "metadata": {
+        "designer": {
+          "x": 367,
+          "y": 33
+        },
+        "restore": {
+          "expect": {
+            "model": {
+              "label": "Gemini 2.5 FlashApplies smart reasoning to fast data tasks while ensuring quick response times"
+            }
+          }
+        },
+        "expect": [
+          {
+            "name": "model",
+            "type": "select",
+            "label": "Model",
+            "required": true,
+            "validate": {
+              "enum": [
+                "gemini-2.5-flash",
+                "gemini-3.6-flash",
+                "gemini-3.5-flash",
+                "gemini-3.1-pro-preview",
+                "gemini-3-flash-preview",
+                "gemini-2.5-pro"
+              ]
+            }
+          },
+          {
+            "name": "textPrompt",
+            "type": "text",
+            "label": "Text prompt",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "module": "json:ParseJSON",
+      "version": 1,
+      "parameters": {
+        "type": 0
+      },
+      "mapper": {
+        "json": "{{24.result}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 832,
+          "y": 57
+        },
+        "restore": {
+          "parameters": {
+            "type": {
+              "label": "My data structure"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "type",
+            "type": "udt",
+            "label": "Data structure"
+          }
+        ],
+        "expect": [
+          {
+            "name": "json",
+            "type": "text",
+            "label": "JSON string",
+            "required": true
+          }
+        ],
+        "interface": [
+          {
+            "help": "",
+            "name": "nombre",
+            "type": "text",
+            "label": "Nombre",
+            "default": null,
+            "required": false,
+            "multiline": false
+          },
+          {
+            "help": "",
+            "name": "fecha",
+            "type": "text",
+            "label": "Fecha",
+            "default": null,
+            "required": false,
+            "multiline": false
+          },
+          {
+            "help": "",
+            "name": "hora",
+            "type": "text",
+            "label": "Hora",
+            "default": null,
+            "required": false,
+            "multiline": false
+          },
+          {
+            "help": "",
+            "name": "completo",
+            "type": "boolean",
+            "label": "Completo",
+            "required": false
+          },
+          {
+            "help": "",
+            "name": "falta",
+            "type": "text",
+            "label": "Falta",
+            "default": null,
+            "required": false,
+            "multiline": false
+          }
+        ]
+      }
+    },
+    {
+      "id": 14,
+      "module": "builtin:BasicRouter",
+      "version": 1,
+      "mapper": null,
+      "metadata": {
+        "designer": {
+          "x": 1229,
+          "y": 21
+        }
+      },
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 15,
+              "module": "gateway:WebhookRespond",
+              "version": 1,
+              "parameters": {},
+              "filter": {
+                "name": "",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{10.intencion}}",
+                      "b": "confirmar",
+                      "o": "text:equal"
+                    }
+                  ]
+                ]
+              },
+              "mapper": {
+                "body": "{\r\n  \"respuesta\": \"¡Excelente! Para agendar tu turno, por favor envíame tu **Nombre, Apellido y Número de teléfono**.\"\r\n}",
+                "status": "200",
+                "headers": []
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": -300
+                },
+                "restore": {
+                  "expect": {
+                    "headers": {
+                      "mode": "chose"
+                    }
+                  }
+                },
+                "expect": [
+                  {
+                    "name": "status",
+                    "type": "uinteger",
+                    "label": "Status",
+                    "required": true,
+                    "validate": {
+                      "min": 100
+                    }
+                  },
+                  {
+                    "name": "body",
+                    "type": "any",
+                    "label": "Body"
+                  },
+                  {
+                    "name": "headers",
+                    "spec": [
+                      {
+                        "name": "key",
+                        "type": "text",
+                        "label": "Key",
+                        "required": true,
+                        "validate": {
+                          "max": 256
+                        }
+                      },
+                      {
+                        "name": "value",
+                        "type": "text",
+                        "label": "Value",
+                        "required": true,
+                        "validate": {
+                          "max": 4096
+                        }
+                      }
+                    ],
+                    "type": "array",
+                    "label": "Custom headers",
+                    "validate": {
+                      "maxItems": 16
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 27,
+              "module": "datastore:GetRecord",
+              "version": 1,
+              "parameters": {
+                "datastore": 0
+              },
+              "filter": {
+                "name": "",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{10.intencion}}",
+                      "b": "agendar",
+                      "o": "text:equal"
+                    }
+                  ]
+                ]
+              },
+              "mapper": {
+                "key": "{{2.session_id}}",
+                "returnWrapped": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1704,
+                  "y": 377,
+                  "messages": [
+                    {
+                      "category": "share",
+                      "severity": "warning",
+                      "message": "This module may contain parts which cannot be shared completely."
+                    }
+                  ]
+                },
+                "restore": {
+                  "parameters": {
+                    "datastore": {
+                      "label": "My data store"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "datastore",
+                    "type": "datastore",
+                    "label": "Data store",
+                    "required": true
+                  }
+                ],
+                "expect": [
+                  {
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                  },
+                  {
+                    "name": "returnWrapped",
+                    "type": "boolean",
+                    "label": "Return Wrapped Output",
+                    "required": true
+                  }
+                ],
+                "interface": [
+                  {
+                    "help": "",
+                    "name": "Key",
+                    "type": "text",
+                    "label": null,
+                    "default": null,
+                    "required": false,
+                    "multiline": false
+                  },
+                  {
+                    "help": "",
+                    "name": "IDEventos",
+                    "type": "text",
+                    "label": null,
+                    "default": null,
+                    "required": false,
+                    "multiline": false
+                  },
+                  {
+                    "help": "",
+                    "name": "Estado",
+                    "type": "text",
+                    "label": null,
+                    "default": null,
+                    "required": false,
+                    "multiline": false
+                  }
+                ]
+              }
+            },
+            {
+              "id": 29,
+              "module": "google-calendar:updateAnEvent",
+              "version": 5,
+              "metadata": {
+                "designer": {
+                  "x": 2004,
+                  "y": 377,
+                  "messages": [
+                    {
+                      "category": "setup",
+                      "severity": "error",
+                      "message": "Calendar ID: Value must not be empty."
+                    },
+                    {
+                      "category": "setup",
+                      "severity": "error",
+                      "message": "Connection: Value must not be empty."
+                    },
+                    {
+                      "category": "setup",
+                      "severity": "error",
+                      "message": "Event ID: Value must not be empty."
+                    },
+                    {
+                      "category": "setupreq",
+                      "severity": "error",
+                      "message": "This module doesn't have a connection. Create a connection in the module settings to continue."
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": 30,
+              "module": "datastore:DeleteRecord",
+              "version": 1,
+              "metadata": {
+                "designer": {
+                  "x": 2304,
+                  "y": 377,
+                  "messages": [
+                    {
+                      "category": "setup",
+                      "severity": "error",
+                      "message": "Data store: Value must not be empty."
+                    },
+                    {
+                      "category": "setup",
+                      "severity": "error",
+                      "message": "Key: Value must not be empty."
+                    },
+                    {
+                      "category": "setupreq",
+                      "severity": "error",
+                      "message": "Data store: Value must not be empty."
+                    },
+                    {
+                      "category": "setupreq",
+                      "severity": "error",
+                      "message": "Key: Value must not be empty."
+                    },
+                    {
+                      "category": "share",
+                      "severity": "warning",
+                      "message": "This module may contain parts which cannot be shared completely."
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": 31,
+              "module": "gateway:WebhookRespond",
+              "version": 1,
+              "metadata": {
+                "designer": {
+                  "x": 2604,
+                  "y": 377
+                }
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 25,
+              "module": "google-calendar:searchEvents",
+              "version": 5,
+              "parameters": {
+                "__IMTCONN__": 0
+              },
+              "filter": {
+                "name": "",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{10.intencion}}",
+                      "b": "buscar",
+                      "o": "text:equal"
+                    }
+                  ]
+                ]
+              },
+              "mapper": {
+                "q": "disponible",
+                "limit": "10",
+                "timeMax": "{{addDays(now; 14)}}",
+                "timeMin": "{{now}}",
+                "calendar": "REEMPLAZAR_POR_ID_DE_CALENDARIO",
+                "singleEvents": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1795,
+                  "y": 13
+                },
+                "restore": {
+                  "expect": {
+                    "orderBy": {
+                      "mode": "chose",
+                      "label": "Empty"
+                    },
+                    "calendar": {
+                      "mode": "chose",
+                      "label": "Turnero dsi"
+                    },
+                    "eventTypes": {
+                      "mode": "chose"
+                    }
+                  },
+                  "parameters": {
+                    "__IMTCONN__": {
+                      "data": {
+                        "scoped": "true",
+                        "connection": "google"
+                      },
+                      "label": "Google Calendar connection"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "__IMTCONN__",
+                    "type": "account:google",
+                    "label": "Connection",
+                    "required": true
+                  }
+                ],
+                "expect": [
+                  {
+                    "name": "calendar",
+                    "type": "select",
+                    "label": "Calendar ID",
+                    "required": true
+                  },
+                  {
+                    "name": "timeMin",
+                    "time": true,
+                    "type": "date",
+                    "label": "Start Date"
+                  },
+                  {
+                    "name": "timeMax",
+                    "time": true,
+                    "type": "date",
+                    "label": "End Date"
+                  },
+                  {
+                    "name": "updatedMin",
+                    "time": true,
+                    "type": "date",
+                    "label": "Updated from"
+                  },
+                  {
+                    "name": "singleEvents",
+                    "type": "boolean",
+                    "label": "Single Events",
+                    "required": true
+                  },
+                  {
+                    "name": "q",
+                    "type": "text",
+                    "label": "Query"
+                  },
+                  {
+                    "name": "eventTypes",
+                    "type": "select",
+                    "label": "Event Types",
+                    "multiple": true,
+                    "validate": {
+                      "enum": [
+                        "default",
+                        "fromGmail",
+                        "focusTime",
+                        "outOfOffice",
+                        "workingLocation"
+                      ]
+                    }
+                  },
+                  {
+                    "name": "orderBy",
+                    "type": "select",
+                    "label": "Order By",
+                    "validate": {
+                      "enum": [
+                        "startTime",
+                        "updated"
+                      ]
+                    }
+                  },
+                  {
+                    "name": "limit",
+                    "type": "uinteger",
+                    "label": "Limit"
+                  }
+                ]
+              }
+            },
+            {
+              "id": 32,
+              "module": "gemini-ai:simpleTextPrompt",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "model": "gemini-2.5-flash",
+                "textPrompt": "eres un asistente virtual de agendamiento de citas.\r\n\r\n revisa lo recibido de  y trasformalo en u{{`25`}} una lista con los dias y horarios disponible,\r\nDa como respuesta los dias y horarios disponibles, no uses saltos de linea ya que necesito que el formato Responde ÚNICAMENTE el objeto JSON plano sin bloques de código, ni comillas ```json. y con el formato de {\"respuesta\": \"la respuesta\"}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 2095,
+                  "y": 13
+                },
+                "restore": {
+                  "expect": {
+                    "model": {
+                      "label": "Gemini 2.5 FlashApplies smart reasoning to fast data tasks while ensuring quick response times"
+                    }
+                  }
+                },
+                "expect": [
+                  {
+                    "name": "model",
+                    "type": "select",
+                    "label": "Model",
+                    "required": true,
+                    "validate": {
+                      "enum": [
+                        "gemini-2.5-flash",
+                        "gemini-3.6-flash",
+                        "gemini-3.5-flash",
+                        "gemini-3.1-pro-preview",
+                        "gemini-3-flash-preview",
+                        "gemini-2.5-pro"
+                      ]
+                    }
+                  },
+                  {
+                    "name": "textPrompt",
+                    "type": "text",
+                    "label": "Text prompt",
+                    "required": true
+                  }
+                ]
+              }
+            },
+            {
+              "id": 33,
+              "module": "datastore:AddRecord",
+              "version": 1,
+              "parameters": {
+                "datastore": 0
+              },
+              "mapper": {
+                "key": "{{2.session_id}}",
+                "data": {
+                  "Key": "{{2.session_id}}",
+                  "Estado": "Estado-confirmacion",
+                  "IDEventos": "{{25.id}}"
+                },
+                "overwrite": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 2395,
+                  "y": 13,
+                  "messages": [
+                    {
+                      "category": "share",
+                      "severity": "warning",
+                      "message": "This module may contain parts which cannot be shared completely."
+                    }
+                  ]
+                },
+                "restore": {
+                  "expect": {
+                    "overwrite": {
+                      "mode": "chose"
+                    }
+                  },
+                  "parameters": {
+                    "datastore": {
+                      "label": "My data store"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "datastore",
+                    "type": "datastore",
+                    "label": "Data store",
+                    "required": true
+                  }
+                ],
+                "expect": [
+                  {
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key"
+                  },
+                  {
+                    "name": "overwrite",
+                    "type": "boolean",
+                    "label": "Overwrite an existing record",
+                    "required": true
+                  },
+                  {
+                    "name": "data",
+                    "spec": [
+                      {
+                        "name": "Key",
+                        "type": "text",
+                        "label": "Nombre"
+                      },
+                      {
+                        "name": "IDEventos",
+                        "type": "text",
+                        "label": null
+                      },
+                      {
+                        "name": "Estado",
+                        "type": "text",
+                        "label": null
+                      }
+                    ],
+                    "type": "collection",
+                    "label": "Record"
+                  }
+                ]
+              }
+            },
+            {
+              "id": 34,
+              "module": "gateway:WebhookRespond",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "body": "{{32.result}}",
+                "status": "200",
+                "headers": []
+              },
+              "metadata": {
+                "designer": {
+                  "x": 2695,
+                  "y": 13
+                },
+                "restore": {
+                  "expect": {
+                    "headers": {
+                      "mode": "chose"
+                    }
+                  }
+                },
+                "expect": [
+                  {
+                    "name": "status",
+                    "type": "uinteger",
+                    "label": "Status",
+                    "required": true,
+                    "validate": {
+                      "min": 100
+                    }
+                  },
+                  {
+                    "name": "body",
+                    "type": "any",
+                    "label": "Body"
+                  },
+                  {
+                    "name": "headers",
+                    "spec": [
+                      {
+                        "name": "key",
+                        "type": "text",
+                        "label": "Key",
+                        "required": true,
+                        "validate": {
+                          "max": 256
+                        }
+                      },
+                      {
+                        "name": "value",
+                        "type": "text",
+                        "label": "Value",
+                        "required": true,
+                        "validate": {
+                          "max": 4096
+                        }
+                      }
+                    ],
+                    "type": "array",
+                    "label": "Custom headers",
+                    "validate": {
+                      "maxItems": 16
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "slots": null,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": {
+      "orphans": []
+    },
+    "zone": "us2.make.com",
+    "notes": []
+  }
+}

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#111827" />
+    <meta
+      name="description"
+      content="Asistente web para consultar disponibilidad y reservar turnos."
+    />
+    <title>Asistente de Turnos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="chat-card" aria-labelledby="app-title">
+        <header class="topbar">
+          <div class="brand-mark" aria-hidden="true">
+            <span></span>
+            <span></span>
+          </div>
+          <div class="brand-copy">
+            <p class="eyebrow">Agenda online</p>
+            <h1 id="app-title">Asistente de turnos</h1>
+          </div>
+          <div class="status" title="Servicio disponible">
+            <span class="status-dot" aria-hidden="true"></span>
+            En línea
+          </div>
+        </header>
+
+        <section id="chat" class="chat" aria-live="polite" aria-label="Conversación">
+          <div class="message-row bot-row">
+            <div class="avatar" aria-hidden="true">A</div>
+            <div class="message bot">
+              <p>¡Hola! Soy tu asistente de turnos.</p>
+              <p>Consultame los horarios disponibles y te ayudo a reservar.</p>
+            </div>
+          </div>
+        </section>
+
+        <div class="suggestions" aria-label="Consultas sugeridas">
+          <button type="button" class="chip" data-message="¿Qué turnos hay disponibles?">
+            Ver disponibilidad
+          </button>
+          <button type="button" class="chip" data-message="Quiero reservar un turno">
+            Reservar un turno
+          </button>
+        </div>
+
+        <form id="chatForm" class="composer">
+          <label class="sr-only" for="pregunta">Escribí tu mensaje</label>
+          <input
+            type="text"
+            id="pregunta"
+            name="pregunta"
+            maxlength="500"
+            placeholder="Escribí tu mensaje..."
+            autocomplete="off"
+            required
+          />
+          <button id="sendButton" type="submit" aria-label="Enviar mensaje">
+            <span>Enviar</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m4 4 16 8-16 8 3-8-3-8Zm3.8 7h7.4L6.7 6.8 7.8 11Zm-1.1 6.2 8.5-4.2H7.8l-1.1 4.2Z" />
+            </svg>
+          </button>
+        </form>
+
+        <p class="privacy-note">No compartas contraseñas ni información bancaria.</p>
+      </section>
+    </main>
+
+    <script src="js/script.js" defer></script>
+  </body>
+</html>
