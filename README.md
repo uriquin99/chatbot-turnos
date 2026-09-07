@@ -2,6 +2,9 @@
 
 Aplicación web pública para consultar disponibilidad y reservar turnos mediante un chatbot conectado con Make, Supabase y Google Calendar.
 
+- Web pública: https://chatbot-turnos-uriel.vercel.app
+- Repositorio: https://github.com/uriquin99/chatbot-turnos
+
 ## Problema
 
 El prototipo original funcionaba únicamente con VS Code y Live Server. Dependía de una computadora encendida, no tenía una URL pública ni una base de datos propia y utilizaba una sesión fija que mezclaba las conversaciones de distintos usuarios.
@@ -36,10 +39,10 @@ La función `/api/chat` actúa como intermediaria para que la URL del webhook de
 1. El usuario abre la aplicación desde una computadora o un celular.
 2. El navegador genera un identificador de sesión anónimo y persistente.
 3. El usuario consulta los horarios disponibles.
-4. Make clasifica el mensaje y busca eventos disponibles en el calendario `Peluqueria`.
+4. Make clasifica el mensaje y busca eventos disponibles en el calendario `Turnero dsi`.
 5. El usuario selecciona un horario y proporciona nombre, apellido y teléfono.
-6. Make crea o actualiza el usuario en Supabase.
-7. Make actualiza el evento en Google Calendar y guarda el turno relacionado en Supabase.
+6. Make actualiza el evento en Google Calendar.
+7. Make llama a la función protegida `registrar-turno`, que crea o actualiza el usuario y guarda el turno relacionado en Supabase.
 8. El chatbot muestra la confirmación.
 
 ## Estructura del proyecto
@@ -96,7 +99,7 @@ Para probar la interfaz sin la función de Vercel puede usarse Live Server. Para
 | --- | --- | --- |
 | `MAKE_WEBHOOK_URL` | URL privada del webhook de Make | No |
 
-Las claves de Supabase y Google se configuran dentro de Make. Nunca deben guardarse en GitHub ni en el frontend.
+La credencial de Google y el secreto exclusivo de la función `registrar-turno` se configuran dentro de Make. La llave maestra de Supabase no se entrega a Make. Ningún secreto se guarda en GitHub ni en el frontend.
 
 ## Configuración de Make
 
@@ -117,15 +120,18 @@ Las correcciones, prompts, filtros, módulos de Supabase y configuración de Cal
 - Validación de respuestas incorrectas o vacías.
 - Creación de tablas, relación, restricciones y RLS en Supabase.
 - Inserción y consulta de un usuario y turno de prueba.
-- Prueba del endpoint de salud.
-- Prueba completa Web → Make → Calendar → Supabase pendiente de la configuración final del escenario.
+- Prueba del endpoint de salud con `make_configurado: true`.
+- Prueba pública Web/API → Vercel → Make → Google Calendar con respuesta HTTP 200 y disponibilidad real.
+- Prueba directa de la función protegida de Supabase con creación verificada de usuario y turno.
+- Reserva completa que modifica un evento real pendiente de autorización específica de la prueba final.
 
 ## Seguridad
 
 - Secretos almacenados fuera del repositorio.
 - Webhook protegido detrás de una función de Vercel.
 - RLS habilitado en Supabase.
-- Sin credenciales de Supabase en el navegador.
+- Sin credenciales de Supabase en el navegador ni llave maestra en Make.
+- Función `registrar-turno` con autenticación mediante un secreto exclusivo y revocable.
 - Validación de método, longitud y sesión en `/api/chat`.
 - Timeout para evitar conexiones bloqueadas.
 - Encabezados CSP, `nosniff`, Referrer Policy y Permissions Policy.
@@ -164,4 +170,4 @@ Agregar en `docs/capturas/`:
 
 ## Estado
 
-Versión 1.0 en preparación para producción.
+Versión 1.0 desplegada en producción. La consulta de disponibilidad y la persistencia segura están verificadas; resta ejecutar la reserva final de demostración si se autoriza modificar un evento disponible.
