@@ -89,8 +89,8 @@ En **Add/replace a record**, activar la opción de sobrescribir para que una nue
 
 ### 6. Búsqueda de Google Calendar
 
-- Calendar: `Peluqueria`
-- Query: `disponible`
+- Calendar: `Turnero dsi`
+- Query: vacío; la disponibilidad se identifica por el resumen del evento
 - Time min: `{{now}}`
 - Time max: `{{addDays(now; 14)}}`
 - Maximum results: `10`
@@ -113,7 +113,7 @@ La respuesta de la ruta `confirmar` debe ser JSON válido:
 En **Google Calendar > Update an Event**:
 
 - Reconectar la cuenta de Google.
-- Calendar ID: `Peluqueria`.
+- Calendar ID: `Turnero dsi`.
 - Event ID: ID guardado en el Data Store para `{{2.session_id}}`.
 - Summary: `Turno - {{10.nombre}} {{10.apellido}}`.
 - Description: `Teléfono: {{10.telefono}} | Reservado desde chatbot`.
@@ -126,64 +126,38 @@ Proyecto: `Chatbot Turnos`
 Región: São Paulo  
 Tablas: `usuarios` y `turnos`
 
-Las tablas no permiten acceso público. Por eso, Make debe usar una **Secret key** guardada dentro de su conexión HTTP. No pegar esa clave en el Blueprint, el código, GitHub, capturas ni README.
+Las tablas no permiten acceso público. Para evitar entregar a Make la llave maestra de Supabase, se desplegó la Edge Function `registrar-turno`. La función acepta únicamente solicitudes con un secreto exclusivo y revocable, guardado en Make. El secreto no debe aparecer en el Blueprint, el código, GitHub, capturas ni README.
 
-### Módulo A: buscar usuario por teléfono
+### Módulo HTTP único: registrar usuario y turno
 
-Agregar **HTTP > Make a request** antes de crear el evento:
-
-- Method: `GET`
-- URL: `SUPABASE_URL/rest/v1/usuarios?telefono=eq.{{10.telefono}}&select=id`
-- Headers:
-  - `apikey`: Secret key de Supabase
-  - `Authorization`: `Bearer SECRET_KEY`
-  - `Content-Type`: `application/json`
-
-### Módulo B: crear o actualizar usuario
+Agregar **HTTP > Make a request** después de actualizar el evento de Calendar y antes de borrar el Data Store:
 
 - Method: `POST`
-- URL: `SUPABASE_URL/rest/v1/usuarios?on_conflict=telefono`
-- Headers: los anteriores, más `Prefer: resolution=merge-duplicates,return=representation`
+- URL: `SUPABASE_URL/functions/v1/registrar-turno`
+- Headers:
+  - `Authorization`: `Bearer SECRETO_EXCLUSIVO_DE_LA_FUNCION`
+  - `Content-Type`: `application/json`
 - Body type: Raw / JSON
 
 ```json
 {
+  "session_id": "{{2.session_id}}",
   "nombre": "{{10.nombre}}",
   "apellido": "{{10.apellido}}",
   "telefono": "{{10.telefono}}",
-  "session_id": "{{2.session_id}}"
+  "fecha_hora_inicio": "{{formatDate(29.start; \"YYYY-MM-DDTHH:mm:ss\")}}",
+  "google_event_id": "{{27.IDEventos}}"
 }
 ```
 
-Guardar el `id` que devuelve Supabase.
-
-### Módulo C: guardar turno
-
-Este módulo se ejecuta después de actualizar Calendar:
-
-- Method: `POST`
-- URL: `SUPABASE_URL/rest/v1/turnos`
-- Headers: los mismos, más `Prefer: return=representation`
-- Body type: Raw / JSON
-
-```json
-{
-  "usuario_id": "ID_DEVUELTO_POR_SUPABASE",
-  "fecha": "AAAA-MM-DD_DEL_EVENTO",
-  "hora": "HH:mm:ss_DEL_EVENTO",
-  "estado": "confirmado",
-  "servicio": "Turno general",
-  "google_event_id": "ID_DEL_EVENTO_DE_CALENDAR"
-}
-```
+La función valida los campos, busca al usuario por teléfono, lo crea o actualiza y registra el turno confirmado. Solo la función usa internamente la credencial elevada de Supabase.
 
 ### Orden seguro de la ruta `agendar`
 
 1. Obtener estado por `session_id`.
 2. Validar que existan nombre, apellido, teléfono y Event ID.
-3. Crear/actualizar usuario en Supabase.
-4. Actualizar el evento disponible en Calendar.
-5. Guardar el turno en Supabase.
+3. Actualizar el evento disponible en Calendar.
+4. Llamar a `registrar-turno` para crear/actualizar el usuario y guardar el turno.
 6. Borrar el estado del Data Store.
 7. Responder al webhook.
 
@@ -208,7 +182,7 @@ Si Calendar falla, no se debe guardar un turno confirmado. Agregar un **error ha
 - [ ] El escenario está en modo ON.
 - [ ] Los tres filtros comparan valores en minúsculas.
 - [ ] Dos navegadores generan claves de Data Store diferentes.
-- [ ] La búsqueda usa `addDays(now; 14)`.
+- [x] La búsqueda usa `addDays(now; 14)`.
 - [ ] El evento deja de llamarse `disponible` al reservarlo.
 - [ ] Se crea o actualiza el usuario en Supabase.
 - [ ] Se crea el turno relacionado con el usuario.
