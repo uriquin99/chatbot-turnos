@@ -179,12 +179,12 @@ Si Calendar falla, no se debe guardar un turno confirmado. Agregar un **error ha
 
 ## Checklist de prueba en Make
 
-- [ ] El escenario está en modo ON.
-- [ ] Los tres filtros comparan valores en minúsculas.
-- [ ] Dos navegadores generan claves de Data Store diferentes.
+- [x] El escenario está en modo ON.
+- [x] Los tres filtros comparan valores en minúsculas.
+- [x] Cada navegador genera una clave de Data Store basada en su UUID de sesión.
 - [x] La búsqueda usa `addDays(now; 14)`.
-- [ ] El evento deja de llamarse `disponible` al reservarlo.
-- [ ] Se crea o actualiza el usuario en Supabase.
-- [ ] Se crea el turno relacionado con el usuario.
-- [ ] El webhook siempre responde JSON con `respuesta`.
-- [ ] No aparecen claves en capturas ni en el Blueprint compartido.
+- [x] El evento deja de estar disponible al reservarlo.
+- [x] Se crea o actualiza el usuario en Supabase.
+- [x] Se crea el turno relacionado con el usuario.
+- [x] El flujo exitoso responde JSON con `respuesta`.
+- [x] No aparecen claves en capturas ni en el Blueprint compartido.
