@@ -123,7 +123,7 @@ Las correcciones, prompts, filtros, módulos de Supabase y configuración de Cal
 - Prueba del endpoint de salud con `make_configurado: true`.
 - Prueba pública Web/API → Vercel → Make → Google Calendar con respuesta HTTP 200 y disponibilidad real.
 - Prueba directa de la función protegida de Supabase con creación verificada de usuario y turno.
-- Reserva completa que modifica un evento real pendiente de autorización específica de la prueba final.
+- Reserva completa Web/API → Vercel → Make → Google Calendar → Supabase con datos ficticios: respuesta HTTP 200, evento retirado de la disponibilidad y turno confirmado en la base.
 
 ## Seguridad
 
@@ -170,4 +170,4 @@ Agregar en `docs/capturas/`:
 
 ## Estado
 
-Versión 1.0 desplegada en producción. La consulta de disponibilidad y la persistencia segura están verificadas; resta ejecutar la reserva final de demostración si se autoriza modificar un evento disponible.
+Versión 1.0 desplegada y verificada de punta a punta en producción.
