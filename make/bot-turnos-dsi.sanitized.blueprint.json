@@ -1,0 +1,1158 @@
+{
+  "name": "bot turnos dsi",
+  "flow": [
+    {
+      "id": 2,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": 0,
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0
+        },
+        "restore": {
+          "parameters": {
+            "hook": "REEMPLAZAR_WEBHOOK"
+          }
+        },
+        "parameters": [
+          {
+            "name": "hook",
+            "type": "hook:gateway-webhook",
+            "label": "Webhook",
+            "required": true
+          },
+          {
+            "name": "maxResults",
+            "type": "number",
+            "label": "Maximum number of results"
+          }
+        ]
+      }
+    },
+    {
+      "id": 24,
+      "module": "gemini-ai:simpleTextPrompt",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "model": "gemini-2.5-flash",
+        "textPrompt": "Eres un asistente de agendamiento de citas. Analiza el mensaje entrante del usuario y determina su intención.\r\nMensaje del usuario: {{2.pregunta}}\r\n\r\nDebes responder ÚNICAMENTE en formato JSON plano con esta estructura exactas Responde ÚNICAMENTE con el objeto JSON crudo. No incluyas bloques de código ni ```json ni comillas simples al inicio o final:\r\n{\r\n  \"intencion\": \"Buscar\" | \"Confirmar\" | \"Agendar\",\r\n  \"nombre\": \"nombre del usuario si lo proporcionó o null\",\r\n  \"apellido\": \"apellido si lo proporcionó o null\",\r\n  \"telefono\": \"teléfono si lo proporcionó o null\",\r\n\"fecha_hora_inicio\": \"YYYY-MM-DDTHH:mm:ss (ej: 2026-08-12T11:00:00)\"\r\n}\r\n\r\nReglas de clasificación:\r\n- \"buscar\": Si saluda, pide turnos, consulta disponibilidad o pregunta qué días hay libres.\r\n- \"confirmar\": Si dice \"sí\", \"me sirve\", \"de acuerdo\", \"quiero ese turno\", o confirma un horario pero AÚN NO da sus datos completos.\r\n- \"agendar\": Si proporciona sus datos (nombre, apellido y/o teléfono) para registrar la cita."
+      },
+      "metadata": {
+        "designer": {
+          "x": 367,
+          "y": 33
+        },
+        "restore": {
+          "expect": {
+            "model": {
+              "label": "Gemini 2.5 FlashApplies smart reasoning to fast data tasks while ensuring quick response times"
+            }
+          }
+        },
+        "expect": [
+          {
+            "name": "model",
+            "type": "select",
+            "label": "Model",
+            "required": true,
+            "validate": {
+              "enum": [
+                "gemini-2.5-flash",
+                "gemini-3.8-flash",
+                "gemini-3.7-flash",
+                "gemini-3.6-flash",
+                "gemini-3.5-flash",
+                "gemini-3.1-pro-preview",
+                "gemini-3-flash-preview",
+                "gemini-2.5-pro"
+              ]
+            }
+          },
+          {
+            "name": "textPrompt",
+            "type": "text",
+            "label": "Text prompt",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "module": "json:ParseJSON",
+      "version": 1,
+      "parameters": {
+        "type": null
+      },
+      "mapper": {
+        "json": "{{24.result}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 832,
+          "y": 57
+        },
+        "restore": {
+          "parameters": {
+            "type": {
+              "label": "My data structure"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "type",
+            "type": "udt",
+            "label": "Data structure"
+          }
+        ],
+        "expect": [
+          {
+            "name": "json",
+            "type": "text",
+            "label": "JSON string",
+            "required": true
+          }
+        ],
+        "interface": [
+          {
+            "help": "",
+            "name": "nombre",
+            "type": "text",
+            "label": "Nombre",
+            "default": null,
+            "required": false,
+            "multiline": false
+          },
+          {
+            "help": "",
+            "name": "fecha",
+            "type": "text",
+            "label": "Fecha",
+            "default": null,
+            "required": false,
+            "multiline": false
+          },
+          {
+            "help": "",
+            "name": "hora",
+            "type": "text",
+            "label": "Hora",
+            "default": null,
+            "required": false,
+            "multiline": false
+          },
+          {
+            "help": "",
+            "name": "completo",
+            "type": "boolean",
+            "label": "Completo",
+            "required": false
+          },
+          {
+            "help": "",
+            "name": "falta",
+            "type": "text",
+            "label": "Falta",
+            "default": null,
+            "required": false,
+            "multiline": false
+          }
+        ]
+      }
+    },
+    {
+      "id": 14,
+      "module": "builtin:BasicRouter",
+      "version": 1,
+      "mapper": null,
+      "metadata": {
+        "designer": {
+          "x": 1229,
+          "y": 21
+        }
+      },
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 15,
+              "module": "gateway:WebhookRespond",
+              "version": 1,
+              "parameters": {},
+              "filter": {
+                "name": "",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{10.intencion}}",
+                      "b": "Confirmar",
+                      "o": "text:equal"
+                    }
+                  ]
+                ]
+              },
+              "mapper": {
+                "body": "{\r\n  \"respuesta\": \"¡Excelente! Para agendar tu turno, por favor envíame tu **Nombre, Apellido y Número de teléfono**.\"\r\n}",
+                "status": "200",
+                "headers": []
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1529,
+                  "y": -429
+                },
+                "restore": {
+                  "expect": {
+                    "headers": {
+                      "mode": "chose"
+                    }
+                  }
+                },
+                "expect": [
+                  {
+                    "name": "status",
+                    "type": "uinteger",
+                    "label": "Status",
+                    "required": true,
+                    "validate": {
+                      "min": 100
+                    }
+                  },
+                  {
+                    "name": "body",
+                    "type": "any",
+                    "label": "Body"
+                  },
+                  {
+                    "name": "headers",
+                    "spec": [
+                      {
+                        "name": "key",
+                        "type": "text",
+                        "label": "Key",
+                        "required": true,
+                        "validate": {
+                          "max": 256
+                        }
+                      },
+                      {
+                        "name": "value",
+                        "type": "text",
+                        "label": "Value",
+                        "required": true,
+                        "validate": {
+                          "max": 4096
+                        }
+                      }
+                    ],
+                    "type": "array",
+                    "label": "Custom headers",
+                    "validate": {
+                      "maxItems": 16
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 27,
+              "module": "datastore:GetRecord",
+              "version": 1,
+              "parameters": {
+                "datastore": 0
+              },
+              "filter": {
+                "name": "",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{10.intencion}}",
+                      "b": "Agendar",
+                      "o": "text:equal"
+                    }
+                  ]
+                ]
+              },
+              "mapper": {
+                "key": "usuario1",
+                "returnWrapped": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1533,
+                  "y": 183,
+                  "messages": [
+                    {
+                      "category": "share",
+                      "severity": "warning",
+                      "message": "This module may contain parts which cannot be shared completely."
+                    }
+                  ]
+                },
+                "restore": {
+                  "parameters": {
+                    "datastore": "REEMPLAZAR_DATA_STORE"
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "datastore",
+                    "type": "datastore",
+                    "label": "Data store",
+                    "required": true
+                  }
+                ],
+                "expect": [
+                  {
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                  },
+                  {
+                    "name": "returnWrapped",
+                    "type": "boolean",
+                    "label": "Return Wrapped Output",
+                    "required": true
+                  }
+                ],
+                "interface": [
+                  {
+                    "help": "",
+                    "name": "Key",
+                    "type": "text",
+                    "label": null
+                  },
+                  {
+                    "help": "",
+                    "name": "IDEventos",
+                    "type": "text",
+                    "label": null,
+                    "default": null,
+                    "required": false,
+                    "multiline": false
+                  },
+                  {
+                    "help": "",
+                    "name": "Estado",
+                    "type": "text",
+                    "label": null
+                  }
+                ]
+              }
+            },
+            {
+              "id": 29,
+              "module": "google-calendar:updateAnEvent",
+              "version": 5,
+              "parameters": {
+                "__IMTCONN__": 10872394
+              },
+              "mapper": {
+                "event": "3fsbj7mp4vp49p9pnd1siiv34k",
+                "append": false,
+                "calendar": "REEMPLAZAR_ID_CALENDARIO",
+                "allDayEvent": false,
+                "guestPermissions": {}
+              },
+              "metadata": {
+                "designer": {
+                  "x": 2004,
+                  "y": 377
+                },
+                "restore": {
+                  "expect": {
+                    "event": {
+                      "mode": "chose",
+                      "label": "Disponible (2026-09-04T10:30:00-03:00 ~ 2026-09-04T19:00:00-03:00)"
+                    },
+                    "colorId": {
+                      "mode": "chose"
+                    },
+                    "calendar": "REEMPLAZAR_ID_CALENDARIO",
+                    "attendees": {
+                      "mode": "chose"
+                    },
+                    "overrides": {
+                      "mode": "chose"
+                    },
+                    "chatStatus": {
+                      "mode": "chose",
+                      "label": "Vacío"
+                    },
+                    "recurrence": {
+                      "mode": "chose"
+                    },
+                    "visibility": {
+                      "mode": "chose",
+                      "label": "Vacío"
+                    },
+                    "allDayEvent": {
+                      "mode": "chose"
+                    },
+                    "attachments": {
+                      "mode": "chose"
+                    },
+                    "sendUpdates": {
+                      "mode": "chose",
+                      "label": "Vacío"
+                    },
+                    "transparency": {
+                      "mode": "chose",
+                      "label": "Vacío"
+                    },
+                    "autoDeclineMode": {
+                      "mode": "chose",
+                      "label": "Vacío"
+                    }
+                  },
+                  "parameters": {
+                    "__IMTCONN__": {
+                      "data": {
+                        "scoped": "true",
+                        "connection": "REEMPLAZAR_CONEXION"
+                      },
+                      "label": "Sofia's Google connection"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "__IMTCONN__",
+                    "type": "account:google",
+                    "label": "Connection",
+                    "required": true
+                  }
+                ],
+                "expect": [
+                  {
+                    "mode": "edit",
+                    "name": "calendar",
+                    "type": "select",
+                    "label": "Calendar ID",
+                    "required": true
+                  },
+                  {
+                    "name": "event",
+                    "type": "select",
+                    "label": "Event ID",
+                    "required": true
+                  },
+                  {
+                    "name": "summary",
+                    "type": "text",
+                    "label": "Event Name"
+                  },
+                  {
+                    "name": "start",
+                    "time": true,
+                    "type": "date",
+                    "label": "Start Date"
+                  },
+                  {
+                    "name": "end",
+                    "time": true,
+                    "type": "date",
+                    "label": "End Date"
+                  },
+                  {
+                    "name": "duration",
+                    "type": "time",
+                    "label": "Duration"
+                  },
+                  {
+                    "name": "allDayEvent",
+                    "type": "boolean",
+                    "label": "All Day Event",
+                    "required": true
+                  },
+                  {
+                    "name": "autoDeclineMode",
+                    "type": "select",
+                    "label": "Auto Decline Mode",
+                    "validate": {
+                      "enum": [
+                        "declineNone",
+                        "declineOnlyNewConflictingInvitations",
+                        "declineAllConflictingInvitations"
+                      ]
+                    }
+                  },
+                  {
+                    "name": "declineMessage",
+                    "type": "text",
+                    "label": "Decline Message"
+                  },
+                  {
+                    "name": "chatStatus",
+                    "type": "select",
+                    "label": "Chat Status",
+                    "validate": {
+                      "enum": [
+                        "available",
+                        "doNotDisturb"
+                      ]
+                    }
+                  },
+                  {
+                    "name": "colorId",
+                    "type": "select",
+                    "label": "Color"
+                  },
+                  {
+                    "name": "description",
+                    "type": "text",
+                    "label": "Description"
+                  },
+                  {
+                    "name": "location",
+                    "type": "text",
+                    "label": "Location"
+                  },
+                  {
+                    "name": "useDefault",
+                    "type": "boolean",
+                    "label": "Use the default reminder settings for this event"
+                  },
+                  {
+                    "name": "overrides",
+                    "spec": [
+                      {
+                        "name": "method",
+                        "type": "select",
+                        "label": "Method",
+                        "options": [
+                          {
+                            "label": "Email",
+                            "value": "email"
+                          },
+                          {
+                            "label": "Pop-up",
+                            "value": "popup"
+                          }
+                        ],
+                        "required": true
+                      },
+                      {
+                        "name": "minutes",
+                        "type": "uinteger",
+                        "label": "Minutes",
+                        "required": true,
+                        "validate": {
+                          "max": 40320
+                        }
+                      }
+                    ],
+                    "type": "array",
+                    "label": "Reminders",
+                    "validate": {
+                      "maxItems": 5
+                    }
+                  },
+                  {
+                    "name": "attendees",
+                    "spec": [
+                      {
+                        "name": "displayName",
+                        "type": "text",
+                        "label": "Name"
+                      },
+                      {
+                        "name": "email",
+                        "type": "email",
+                        "label": "Email",
+                        "required": true
+                      }
+                    ],
+                    "type": "array",
+                    "label": "Attendees"
+                  },
+                  {
+                    "name": "append",
+                    "type": "boolean",
+                    "label": "Append the Attendees",
+                    "required": true
+                  },
+                  {
+                    "name": "transparency",
+                    "type": "select",
+                    "label": "Show me as",
+                    "validate": {
+                      "enum": [
+                        "opaque",
+                        "transparent"
+                      ]
+                    }
+                  },
+                  {
+                    "name": "visibility",
+                    "type": "select",
+                    "label": "Visibility",
+                    "validate": {
+                      "enum": [
+                        "default",
+                        "public",
+                        "private"
+                      ]
+                    }
+                  },
+                  {
+                    "name": "sendUpdates",
+                    "type": "select",
+                    "label": "Send notifications about the event creation",
+                    "validate": {
+                      "enum": [
+                        "all",
+                        "externalOnly",
+                        "none"
+                      ]
+                    }
+                  },
+                  {
+                    "name": "guestPermissions",
+                    "spec": [
+                      {
+                        "name": "guestsCanModify",
+                        "type": "boolean",
+                        "label": "Modify event"
+                      },
+                      {
+                        "name": "guestsCanInviteOthers",
+                        "type": "boolean",
+                        "label": "Invite others"
+                      },
+                      {
+                        "name": "guestsCanSeeOtherGuests",
+                        "type": "boolean",
+                        "label": "See guest list"
+                      }
+                    ],
+                    "type": "collection",
+                    "label": "Guest Permissions"
+                  },
+                  {
+                    "name": "recurrence",
+                    "spec": {
+                      "name": "value",
+                      "type": "text",
+                      "label": "Value"
+                    },
+                    "type": "array",
+                    "label": "Recurrence"
+                  },
+                  {
+                    "name": "attachments",
+                    "spec": [
+                      {
+                        "name": "fileUrl",
+                        "type": "url",
+                        "label": "File URL",
+                        "required": true
+                      }
+                    ],
+                    "type": "array",
+                    "label": "Attachments"
+                  }
+                ]
+              }
+            },
+            {
+              "id": 30,
+              "module": "datastore:DeleteRecord",
+              "version": 1,
+              "parameters": {
+                "datastore": 0
+              },
+              "mapper": {
+                "key": "usuario1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 2304,
+                  "y": 377,
+                  "messages": [
+                    {
+                      "category": "share",
+                      "severity": "warning",
+                      "message": "This module may contain parts which cannot be shared completely."
+                    }
+                  ]
+                },
+                "restore": {
+                  "parameters": {
+                    "datastore": "REEMPLAZAR_DATA_STORE"
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "datastore",
+                    "type": "datastore",
+                    "label": "Data store",
+                    "required": true
+                  }
+                ],
+                "expect": [
+                  {
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                  }
+                ]
+              }
+            },
+            {
+              "id": 31,
+              "module": "gateway:WebhookRespond",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "body": "{\r\n  \"respuesta\": \"turno agendado señor/a {{10.nombre}}\"\r\n}",
+                "status": "200",
+                "headers": []
+              },
+              "metadata": {
+                "designer": {
+                  "x": 2604,
+                  "y": 377
+                },
+                "restore": {
+                  "expect": {
+                    "headers": {
+                      "mode": "chose"
+                    }
+                  }
+                },
+                "expect": [
+                  {
+                    "name": "status",
+                    "type": "uinteger",
+                    "label": "Status",
+                    "required": true,
+                    "validate": {
+                      "min": 100
+                    }
+                  },
+                  {
+                    "name": "body",
+                    "type": "any",
+                    "label": "Body"
+                  },
+                  {
+                    "name": "headers",
+                    "spec": [
+                      {
+                        "name": "key",
+                        "type": "text",
+                        "label": "Key",
+                        "required": true,
+                        "validate": {
+                          "max": 256
+                        }
+                      },
+                      {
+                        "name": "value",
+                        "type": "text",
+                        "label": "Value",
+                        "required": true,
+                        "validate": {
+                          "max": 4096
+                        }
+                      }
+                    ],
+                    "type": "array",
+                    "label": "Custom headers",
+                    "validate": {
+                      "maxItems": 16
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 25,
+              "module": "google-calendar:searchEvents",
+              "version": 5,
+              "parameters": {
+                "__IMTCONN__": 10871884
+              },
+              "filter": {
+                "name": "",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{10.intencion}}",
+                      "b": "Buscar",
+                      "o": "text:equal"
+                    }
+                  ]
+                ]
+              },
+              "mapper": {
+                "q": "disponible",
+                "limit": "10",
+                "timeMax": "2026-09-30T12:27:00.000Z",
+                "timeMin": "{{now}}",
+                "calendar": "REEMPLAZAR_ID_CALENDARIO",
+                "singleEvents": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1683,
+                  "y": -126
+                },
+                "restore": {
+                  "expect": {
+                    "orderBy": {
+                      "mode": "chose",
+                      "label": "Empty"
+                    },
+                    "calendar": "REEMPLAZAR_ID_CALENDARIO",
+                    "eventTypes": {
+                      "mode": "chose"
+                    }
+                  },
+                  "parameters": {
+                    "__IMTCONN__": {
+                      "data": {
+                        "scoped": "true",
+                        "connection": "REEMPLAZAR_CONEXION"
+                      },
+                      "label": "Sofia's Google connection (REEMPLAZAR_DATO_PRIVADO)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "__IMTCONN__",
+                    "type": "account:google",
+                    "label": "Connection",
+                    "required": true
+                  }
+                ],
+                "expect": [
+                  {
+                    "name": "calendar",
+                    "type": "select",
+                    "label": "Calendar ID",
+                    "required": true
+                  },
+                  {
+                    "name": "timeMin",
+                    "time": true,
+                    "type": "date",
+                    "label": "Start Date"
+                  },
+                  {
+                    "name": "timeMax",
+                    "time": true,
+                    "type": "date",
+                    "label": "End Date"
+                  },
+                  {
+                    "name": "updatedMin",
+                    "time": true,
+                    "type": "date",
+                    "label": "Updated from"
+                  },
+                  {
+                    "name": "singleEvents",
+                    "type": "boolean",
+                    "label": "Single Events",
+                    "required": true
+                  },
+                  {
+                    "name": "q",
+                    "type": "text",
+                    "label": "Query"
+                  },
+                  {
+                    "name": "eventTypes",
+                    "type": "select",
+                    "label": "Event Types",
+                    "multiple": true,
+                    "validate": {
+                      "enum": [
+                        "default",
+                        "fromGmail",
+                        "focusTime",
+                        "outOfOffice",
+                        "workingLocation"
+                      ]
+                    }
+                  },
+                  {
+                    "name": "orderBy",
+                    "type": "select",
+                    "label": "Order By",
+                    "validate": {
+                      "enum": [
+                        "startTime",
+                        "updated"
+                      ]
+                    }
+                  },
+                  {
+                    "name": "limit",
+                    "type": "uinteger",
+                    "label": "Limit"
+                  }
+                ]
+              }
+            },
+            {
+              "id": 32,
+              "module": "gemini-ai:simpleTextPrompt",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "model": "gemini-2.5-flash",
+                "textPrompt": "eres un asistente virtual de agendamiento de citas.\r\n\r\n revisa lo recibido de  y trasformalo en u{{`25`}} una lista con los dias y horarios disponible,\r\nDa como respuesta los dias y horarios disponibles, no uses saltos de linea ya que necesito que el formato Responde ÚNICAMENTE el objeto JSON plano sin bloques de código, ni comillas ```json. y con el formato de {\"respuesta\": \"la respuesta\"}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 2095,
+                  "y": 13
+                },
+                "restore": {
+                  "expect": {
+                    "model": {
+                      "label": "Gemini 2.5 FlashApplies smart reasoning to fast data tasks while ensuring quick response times"
+                    }
+                  }
+                },
+                "expect": [
+                  {
+                    "name": "model",
+                    "type": "select",
+                    "label": "Model",
+                    "required": true,
+                    "validate": {
+                      "enum": [
+                        "gemini-2.5-flash",
+                        "gemini-3.6-flash",
+                        "gemini-3.5-flash",
+                        "gemini-3.1-pro-preview",
+                        "gemini-3-flash-preview",
+                        "gemini-2.5-pro"
+                      ]
+                    }
+                  },
+                  {
+                    "name": "textPrompt",
+                    "type": "text",
+                    "label": "Text prompt",
+                    "required": true
+                  }
+                ]
+              }
+            },
+            {
+              "id": 33,
+              "module": "datastore:AddRecord",
+              "version": 1,
+              "parameters": {
+                "datastore": 0
+              },
+              "mapper": {
+                "key": "",
+                "data": {
+                  "Key": "usuario1",
+                  "Estado": "porconfirmar",
+                  "IDEventos": "{{25.id}}"
+                },
+                "overwrite": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 2395,
+                  "y": 13,
+                  "messages": [
+                    {
+                      "category": "share",
+                      "severity": "warning",
+                      "message": "This module may contain parts which cannot be shared completely."
+                    }
+                  ]
+                },
+                "restore": {
+                  "expect": {
+                    "overwrite": {
+                      "mode": "chose"
+                    }
+                  },
+                  "parameters": {
+                    "datastore": "REEMPLAZAR_DATA_STORE"
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "datastore",
+                    "type": "datastore",
+                    "label": "Data store",
+                    "required": true
+                  }
+                ],
+                "expect": [
+                  {
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key"
+                  },
+                  {
+                    "name": "overwrite",
+                    "type": "boolean",
+                    "label": "Overwrite an existing record",
+                    "required": true
+                  },
+                  {
+                    "name": "data",
+                    "spec": [
+                      {
+                        "name": "Key",
+                        "type": "text",
+                        "label": null
+                      },
+                      {
+                        "name": "IDEventos",
+                        "type": "text",
+                        "label": null
+                      },
+                      {
+                        "name": "Estado",
+                        "type": "text",
+                        "label": null
+                      }
+                    ],
+                    "type": "collection",
+                    "label": "Record"
+                  }
+                ]
+              }
+            },
+            {
+              "id": 34,
+              "module": "gateway:WebhookRespond",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "body": "{{32.result}}",
+                "status": "200",
+                "headers": []
+              },
+              "metadata": {
+                "designer": {
+                  "x": 2695,
+                  "y": 13
+                },
+                "restore": {
+                  "expect": {
+                    "headers": {
+                      "mode": "chose"
+                    }
+                  }
+                },
+                "expect": [
+                  {
+                    "name": "status",
+                    "type": "uinteger",
+                    "label": "Status",
+                    "required": true,
+                    "validate": {
+                      "min": 100
+                    }
+                  },
+                  {
+                    "name": "body",
+                    "type": "any",
+                    "label": "Body"
+                  },
+                  {
+                    "name": "headers",
+                    "spec": [
+                      {
+                        "name": "key",
+                        "type": "text",
+                        "label": "Key",
+                        "required": true,
+                        "validate": {
+                          "max": 256
+                        }
+                      },
+                      {
+                        "name": "value",
+                        "type": "text",
+                        "label": "Value",
+                        "required": true,
+                        "validate": {
+                          "max": 4096
+                        }
+                      }
+                    ],
+                    "type": "array",
+                    "label": "Custom headers",
+                    "validate": {
+                      "maxItems": 16
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 35,
+              "module": "placeholder:Placeholder",
+              "filter": null,
+              "metadata": {
+                "designer": {
+                  "x": 1529,
+                  "y": 471
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "slots": null,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": {
+      "orphans": []
+    },
+    "zone": "us2.make.com",
+    "notes": []
+  }
+}
