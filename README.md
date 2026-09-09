@@ -4,6 +4,7 @@ Aplicación web pública para consultar disponibilidad y reservar turnos mediant
 
 - Web pública: https://chatbot-turnos-uriel.vercel.app
 - Repositorio: https://github.com/uriquin99/chatbot-turnos
+- Escenario público de Make: https://us2.make.com/public/shared-scenario/ppp2E1HkJ6m/bot-turnos-dsi
 
 ## Problema
 
@@ -26,13 +27,13 @@ El proyecto publica la interfaz en Vercel, conserva el código y su historial en
 ## Arquitectura
 
 ```text
-Usuario → Web en Vercel → /api/chat → Make → Gemini
-                                         ├→ Google Calendar
-                                         └→ Supabase
-                              ← respuesta JSON ←
+Usuario -> Web en Vercel -> /api/chat -> Make -> Gemini
+                                          |-> Google Calendar
+                                          `-> Supabase
+                               <- respuesta JSON <-
 ```
 
-La función `/api/chat` actúa como intermediaria para que la URL del webhook de Make no quede expuesta en el navegador.
+La función `/api/chat` actúa como intermediaria para que la URL privada del webhook de Make no quede expuesta en el navegador.
 
 ## Funcionamiento
 
@@ -42,32 +43,33 @@ La función `/api/chat` actúa como intermediaria para que la URL del webhook de
 4. Make clasifica el mensaje y busca eventos disponibles en el calendario `Turnero dsi`.
 5. El usuario selecciona un horario y proporciona nombre, apellido y teléfono.
 6. Make actualiza el evento en Google Calendar.
-7. Make llama a la función protegida `registrar-turno`, que crea o actualiza el usuario y guarda el turno relacionado en Supabase.
+7. Make registra el usuario y el turno relacionado en Supabase.
 8. El chatbot muestra la confirmación.
 
 ## Estructura del proyecto
 
 ```text
 chatbot-turnos/
-├── api/
-│   ├── chat.js
-│   └── health.js
-├── css/
-│   └── style.css
-├── docs/
-│   ├── arquitectura.md
-│   └── make-produccion.md
-├── js/
-│   └── script.js
-├── supabase/
-│   └── migrations/
-├── .env.example
-├── .gitignore
-├── index.html
-├── package.json
-├── vercel.json
-└── README.md
+|-- api/
+|   |-- chat.js
+|   `-- health.js
+|-- css/style.css
+|-- docs/
+|   |-- arquitectura.md
+|   `-- make-produccion.md
+|-- js/script.js
+|-- make/
+|   `-- bot-turnos-dsi.sanitized.blueprint.json
+|-- supabase/migrations/
+|-- .env.example
+|-- .gitignore
+|-- index.html
+|-- package.json
+|-- vercel.json
+`-- README.md
 ```
+
+El Blueprint publicado en el repositorio está sanitizado: conserva módulos, rutas, filtros y mapeos, pero reemplaza los identificadores privados del webhook, las conexiones, el Data Store y el calendario.
 
 ## Base de datos
 
@@ -79,7 +81,7 @@ Guarda nombre, apellido, email opcional, teléfono, sesión y fechas de creació
 
 Guarda fecha, hora, estado, servicio e ID del evento de Google Calendar. Cada turno pertenece a un usuario mediante `usuario_id`.
 
-La migración completa está en `supabase/migrations`. Las dos tablas tienen Row Level Security habilitado y no aceptan accesos anónimos.
+Las dos tablas tienen Row Level Security habilitado y no aceptan accesos anónimos.
 
 ## Instalación local
 
@@ -91,7 +93,7 @@ cd chatbot-turnos
 npm run check
 ```
 
-Para probar la interfaz sin la función de Vercel puede usarse Live Server. Para probar también `/api/chat`, usar Vercel CLI y crear un archivo `.env.local` basado en `.env.example`.
+Para probar también `/api/chat`, usar Vercel CLI y crear un archivo `.env.local` basado en `.env.example`.
 
 ## Variables de entorno
 
@@ -99,73 +101,68 @@ Para probar la interfaz sin la función de Vercel puede usarse Live Server. Para
 | --- | --- | --- |
 | `MAKE_WEBHOOK_URL` | URL privada del webhook de Make | No |
 
-La credencial de Google y el secreto exclusivo de la función `registrar-turno` se configuran dentro de Make. La llave maestra de Supabase no se entrega a Make. Ningún secreto se guarda en GitHub ni en el frontend.
+Las credenciales de Google y Supabase se configuran únicamente en servicios de backend. Ningún secreto se guarda en GitHub, en el frontend, en este README o en las capturas.
 
 ## Configuración de Make
 
-Las correcciones, prompts, filtros, módulos de Supabase y configuración de Calendar están explicados en [`docs/make-produccion.md`](docs/make-produccion.md).
+El escenario **bot turnos dsi** contiene:
+
+- Webhook de entrada.
+- Gemini para clasificar la intención.
+- Parseo de JSON.
+- Router con ramas de búsqueda, confirmación y respuesta.
+- Consulta y actualización de Google Calendar.
+- Data Store para conservar temporalmente el turno seleccionado.
+- Respuestas JSON al frontend.
+
+Escenario público: https://us2.make.com/public/shared-scenario/ppp2E1HkJ6m/bot-turnos-dsi
 
 ## Publicación en Vercel
 
 1. Importar el repositorio desde GitHub.
 2. Usar el framework **Other** y no configurar un Build Command.
-3. Crear `MAKE_WEBHOOK_URL` en Environment Variables para Production, Preview y Development.
+3. Crear `MAKE_WEBHOOK_URL` como variable privada para Production, Preview y Development.
 4. Ejecutar Deploy.
-5. Verificar `GET /api/health` y luego realizar una reserva completa.
+5. Verificar `GET /api/health` y realizar una reserva completa.
 
 ## Pruebas realizadas
 
 - Validación sintáctica de JavaScript.
 - Comprobación del diseño en escritorio y móvil.
-- Validación de respuestas incorrectas o vacías.
 - Creación de tablas, relación, restricciones y RLS en Supabase.
-- Inserción y consulta de un usuario y turno de prueba.
-- Prueba del endpoint de salud con `make_configurado: true`.
-- Prueba pública Web/API → Vercel → Make → Google Calendar con respuesta HTTP 200 y disponibilidad real.
-- Prueba directa de la función protegida de Supabase con creación verificada de usuario y turno.
-- Reserva completa Web/API → Vercel → Make → Google Calendar → Supabase con datos ficticios: respuesta HTTP 200, evento retirado de la disponibilidad y turno confirmado en la base.
+- Prueba pública Web/API -> Vercel -> Make -> Google Calendar.
+- Reserva E2E con datos ficticios y registro confirmado en Supabase.
+- Verificación de que el horario reservado dejó de aparecer como disponible.
 
 ## Seguridad
 
 - Secretos almacenados fuera del repositorio.
 - Webhook protegido detrás de una función de Vercel.
 - RLS habilitado en Supabase.
-- Sin credenciales de Supabase en el navegador ni llave maestra en Make.
-- Función `registrar-turno` con autenticación mediante un secreto exclusivo y revocable.
+- Sin credenciales privadas en el navegador.
 - Validación de método, longitud y sesión en `/api/chat`.
 - Timeout para evitar conexiones bloqueadas.
-- Encabezados CSP, `nosniff`, Referrer Policy y Permissions Policy.
-- Mensajes mostrados como texto para reducir el riesgo de XSS.
+- Encabezados de seguridad y mensajes mostrados como texto para reducir el riesgo de XSS.
+- Blueprint público sanitizado antes de subirlo.
 
-## Capturas requeridas
+## Evidencias de entrega
 
-Agregar en `docs/capturas/`:
+La carpeta de entrega incluye:
 
-- `supabase-tablas.png`
-- `make-escenario-produccion.png`
-- `google-calendar-evento.png`
-- `web-celular.png`
+- `capturas/supabase-base-datos.png`
+- `capturas/make-escenario-publico.jpg`
+- `capturas/google-calendar-evento.png`
+- `make/bot-turnos-dsi.sanitized.blueprint.json`
 
 ## Integrantes
 
 - Uriel Quinteros
-- Completar los demás integrantes del equipo
-
-## Aprendizajes
-
-- Diferencia entre una aplicación local y una publicada.
-- Control de versiones y commits con GitHub.
-- Hosting y funciones de backend con Vercel.
-- Diseño relacional y seguridad RLS en Supabase.
-- Webhooks, routers, filtros y manejo de errores en Make.
-- Integración y control de disponibilidad con Google Calendar.
 
 ## Futuras mejoras
 
 - Cancelación y reprogramación de turnos.
 - Recordatorios automáticos por correo o WhatsApp.
-- Panel administrativo e historial por usuario.
-- Autenticación para personal autorizado.
+- Panel administrativo con usuario y contraseña.
 - Estadísticas de turnos y servicios.
 
 ## Estado
